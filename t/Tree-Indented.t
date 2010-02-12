@@ -1,13 +1,4 @@
-#!/usr/local/bin/perl
-
-use strict;
-use warnings;
-
-use lib '/galileo/working/bmb/misc/Tree-Indented/trunk/lib';
-
-# remove above lines ...
-
-use Test::More tests => 20;
+use Test::More tests => 19;
 BEGIN { use_ok('Tree::Indented', qw( :all ) ) };
 
 # POD_EXPORTS
@@ -103,31 +94,6 @@ is( $text, traverse_tree_simple( tree => $tree, tab => "\t" ), "pod_subroutines:
 
 }}
 
-
-POD_parse_indented_text: {{
-
-my $text = <<"__";
-l1.1
-\tl2.1
-# (this is a comment)
-\tl2.2
-\t\tl3.1
-l1.2
-__
-{ local
-    $Tree::Indented::Comment = qr/^#/;  # stricter comment marker
-    my $tree = parse_indented_text( text => $text );
-
-is( <<_end_, traverse_tree_simple( tree => $tree ), "pod_parse_indented_text: parse_indented_text(text)" );
-l1.1
-\tl2.1
-\tl2.2
-\t\tl3.1
-l1.2
-_end_
-}
-
-}}
 
 POD_parse_indented_text_text: {{
 
@@ -421,6 +387,5 @@ my $tree = parse_indented_text( text => $text_in );
     );
     is( $new_text, $text_out, "pod_traverse_tree_display: traverse_tree(tree,display)" );
 }}
-
 
 __END__

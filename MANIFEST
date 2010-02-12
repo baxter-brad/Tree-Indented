@@ -2,5 +2,6 @@ Changes
 Makefile.PL
 MANIFEST
 README
+Tree-Indented.tiddlywiki
 t/Tree-Indented.t
 lib/Tree/Indented.pm

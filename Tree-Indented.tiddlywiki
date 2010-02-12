@@ -1,0 +1,289 @@
+!NAME
+Tree::Indented - a module to parse indented text into a simple tree structure
+
+!VERSION
+VERSION: 1.01
+
+!EXPORTS
+Nothing is exported by default. The following may be exported individually; all three may be exported using the {{{:all}}} tag:
+
+{{{
+ - parse_indented_text
+ - traverse_tree_simple
+ - traverse_tree
+}}}
+
+Examples:
+
+{{{
+ use Tree::Indented qw( parse_indented_text traverse_tree );
+ use Tree::Indented qw( :all );
+}}}
+
+!SYNOPSIS
+{{{
+    use Tree::Indented qw( :all );
+    
+    # indented text
+    my $text = <<'__';
+    Fagaceae
+        Fagus
+            Fagus crenata - Japanese Beech
+            Fagus engleriana - Chinese Beech
+            Fagus grandifolia - American Beech
+    Pinaceae
+        Pinus
+            Pinus clausa - Sand Pine
+            Pinus cubensis - Cuban Pine
+            Pinus elliottii - Slash Pine
+    __
+    
+    # create a tree structure (nested arrays)
+    my $tree = parse_indented_text( text => $text );
+
+    # this should print the same indented text as above
+    print traverse_tree_simple( tree => $tree );
+    
+    # this should print nested <ul> lists
+    print traverse_tree( 
+        tree => $tree,
+        # defines begin/end tags for groups and items:
+        tags => {
+            group => {  # $_[0] is the indentation string
+                begin => sub { "\n$_[0]<ul>\n" },
+                end   => sub { "$_[0]</ul>"    },
+            },
+            item => {
+                begin => sub { "$_[0]<li>" },
+                end   => sub { "</li>\n"   },
+            },
+        },
+    );
+}}}
+
+!DESCRIPTION
+This module is designed to provide a simple way of dealing with indented text as a tree structure, where a more-indented line of text is considered a child of the less-indented line above it.
+
+!SUBROUTINES
+Descriptions and parameters for the exportable subroutines are detailed below.
+
+Note that all parameters must be passed as named parameters (hash references are not supported in this version), e.g.,
+
+{{{
+    my $tree = parse_indented_text( text => $text, char => "\t", num => 1 );
+}}}
+
+!!parse_indented_text()
+This routine creates a tree structure from indented text. It returns an array reference that will normally include many nested arrays.
+
+!!!Parameters:
+!!!!text
+A string or scalar reference to a string that contains indented text.
+
+{{{
+    my $tree = parse_indented_text( text => $text );
+}}}
+
+Note that in the indented text that is passed to this routine, the newline character {{{"\n"}}} is special: it always marks the end of a line of text.
+
+!!!!char
+The indentation character (typically a space or a tab) -- default is one space. This character x the {{{num}}} parameter will be the indentation string for each level.
+
+{{{
+    my $tree = parse_indented_text( text => $text, char => "\t", num => 1 );
+}}}
+
+You may set {{{$Tree::Indented::Char}}} to change the default.
+
+{{{
+    $Tree::Indented::Char = "\t";
+    my $tree = parse_indented_text( text => $text, num => 1 );
+}}}
+
+!!!!num
+The number of indentation characters that make up the indentation string per level of the structure -- default is 4, meaning, normally, four spaces per level.
+
+{{{
+    my $tree = parse_indented_text( text => $text, num => 2 );  # two spaces
+}}}
+
+You may set {{{$Tree::Indented::Num}}} to change the default.
+
+{{{
+    $Tree::Indented::Num = 2;
+    my $tree = parse_indented_text( text => $text );
+}}}
+
+!!!!strict
+A boolean value that determines if badly indented text will cause the subroutine to die. The default is false, i.e., badly indented text is accepted;
+
+If a line begins with more indentation characters than expected, and {{{strict}}} is false, the extra indentation characters are simply considered part of the value of that line. But if {{{strict}}} is true, the subroutine will die.
+
+{{{
+    my $tree = parse_indented_text( text => $text, strict => 1 );
+}}}
+
+Be aware that the default value of false for {{{strict}}} means that the routine will not die even for pathologically badly indented text, but the resulting tree in those cases may not be what you expect.
+
+You may set {{{$Tree::Indented::Strict}}} to change the default.
+
+{{{
+    $Tree::Indented::Strict = 1;
+    my $tree = parse_indented_text( text => $text );
+}}}
+
+!!traverse_tree_simple()
+This routine traverses a tree to form indented text. It should be considered the opposite of parse_indented_text(), i.e., the indented text that traverse_tree_simple() returns should be parsable by parse_indented_text() (with proper values for {{{char}}}, {{{num}}}, and {{{tab}}}).
+
+Additionally, the code in this routine may be used as a template for traversing a tree if neither traverse_tree_simple() nor traverse_tree() meets your needs. This implies that the structure of the tree used by this module is not expected to change, and it's not.
+
+!!!Parameters:
+!!!!tree
+This parameter must be a tree structure generated by parse_indented_text().
+
+{{{
+    my $tree     = parse_indented_text(  text => $text );
+    my $new_text = traverse_tree_simple( tree => $tree );
+}}}
+
+!!!!tab
+This parameter is the string used to indent each level of text. The default is four spaces, which corresponds to the default {{{char}}} and {{{num}}} parameters in parse_indented_text().
+
+You may ask why it's {{{char}}} and {{{num}}} for one routine and {{{tab}}} for the other. Good question. :-) Short answer: the code is simpler this way.
+
+{{{
+    my $new_text = traverse_tree_simple( tree => $tree, tab => "\t" );
+}}}
+
+You may set {{{$Tree::Indented::Char}}} and {{{$Tree::Indented::Num}}} to change the default for {{{tab}}}.
+
+{{{
+    $Tree::Indented::Char = "\t";
+    $Tree::Indented::Num  = 1;
+    my $new_text = traverse_tree_simple( tree => $tree );
+}}}
+
+!!!!level
+This parameter is an integer that indicates the level we're at. You should not pass this -- it's used by traverse_tree_simple() itself as it recurses through the tree.
+
+!!traverse_tree()
+This routine traverses a tree to form more complex output. It allows you to define {{{begin}}} and {{{end}}} tags for each {{{item}}} and each {{{group}}} (a "group" is a parent plus its children), and to define {{{change}}} and {{{display}}} routines to be called for each item.
+
+It also passes along all of an item's parents as it recurses through the tree.
+
+By the way, to make traverse_tree() produce the same output as traverse_tree_simple(), pass the following {{{display}}} value:
+
+{{{
+    my $new_text = traverse_tree(
+        tree    => $tree,
+        display => sub { "$_[1]$_[0]\n" } 
+        );
+}}}
+
+!!!Parameters:
+!!!!tree, tab, level
+These are the same parameters described above for traverse_tree_simple(), and the same rule applies for {{{level}}} -- you shouldn't pass it.
+
+!!!!tags
+This parameter is a hash reference. The hash should have two keys, {{{group}}} and {{{item}}}, and each of their values should be a hash with two keys, {{{begin}}} and {{{end}}}. The values for {{{begin}}} and {{{end}}} should be subroutine references (most likely anonymous subs) that are callbacks.
+
+As the routine recurses through the tree, each item and each group will be surrounded by the {{{begin}}} and {{{end}}} subroutines' return values. These subroutines will expect to get the current indentation string ({{{tab}}} x {{{level}}}) and the current parents.
+
+The example in the SYNOPSIS shows an example {{{tags}}} hash that outputs a tree as a set of nested <ul> lists. Below is a more complex version that also adds information about parents as {{{title}}} attributes.
+
+{{{
+    print traverse_tree(
+        tree => $tree,
+        tags => {
+            group => {
+                begin => sub {
+                    my( $indent, $parents ) = @_;
+                    my @p = @$parents;
+                    my $p = @p? qq' title="Parents: @p"': '';
+                    "\n$indent<ul$p>\n";
+                },
+                end => sub { "$_[0]</ul>" },
+            },
+            item => {
+                begin => sub {
+                    my( $indent, $parents ) = @_;
+                    my $p = $parents->[-1]||'';
+                    $p = qq' title="Parent: $p"' if $p;
+                    "$indent<li$p>";
+                },
+                end => sub { "</li>\n" },
+            },
+        },
+    );
+}}}
+
+!!!!change
+This parameter is also a callback, i.e., a subroutine reference, and it expects to get the item value, the indentation string, and the current parents.
+
+The item value will be //replaced// with the return value of this callback (and will then be passed to the {{{display}}} callback if present).
+
+The following example removes the immediate parent's value from the beginning of each item.
+
+{{{
+    print traverse_tree(
+        tree => $tree,
+        display => sub { "$_[1]$_[0]\n" },
+        change => sub {
+            my( $item, $indent, $parents ) = @_;
+            if( my $p = $parents->[-1] ) {
+                $item =~ s/\Q$p //;
+            }
+            $item;  # don't forget to return this
+        } 
+    );
+}}}
+
+Output using the text in the SYNOPSIS:
+
+{{{
+    Fagaceae
+        Fagus
+            crenata - Japanese Beech
+            engleriana - Chinese Beech
+            grandifolia - American Beech
+    Pinaceae
+        Pinus
+            clausa - Sand Pine
+            cubensis - Cuban Pine
+            elliottii - Slash Pine
+}}}
+
+!!!!display
+This parameter is also a callback, i.e., a subroutine reference, and it also expects to get the item value, the indentation string, and the current parents.
+
+The return value of this callback will be added (instead of the item value) to the string that traverse_tree_simple() is building as its return value.
+
+The following example produces the same output as above.
+
+{{{
+    print traverse_tree(
+        tree => $tree,
+        display => sub {
+            my( $item, $indent, $parents ) = @_;
+            if( my $p = $parents->[-1] ) {
+                $item =~ s/\Q$p //;
+            }
+            "$indent$item\n";
+        } 
+    );
+}}}
+
+You might wonder: What's the difference between {{{change}}} and {{{display}}}, since they both affect the value added to the overall return value? The answer is: parents. When you supply a {{{change}}} callback, the item value is changed not only in the overall return value, but also in the list of parents associated with each child. The {{{display}}} callback will not affect the list of parents.
+
+!!!!parents
+This parameter is an array reference to a list of the current item's parents (and grandparents, etc.) This list contains the actual item values found as the tree is traversed (though the values may have been changed by a {{{change}}} callback).
+
+This parameter is like {{{level}}}, it is passed along as the subroutine recurses, and you should not pass it (though I suppose you could if you wanted everything to start with a particular "root" parent value).
+
+!AUTHOR, COPYRIGHT, AND LICENSE
+Brad Baxter, <bbaxter@cpan.org>
+
+Copyright (C) 2010 by Brad Baxter
+
+This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself, either Perl version 5.8.8 or, at your option, any later version of Perl 5 you may have available.
+
