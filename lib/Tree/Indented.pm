@@ -18,11 +18,11 @@ structure
 
 =head1 VERSION
 
-VERSION: 1.01
+VERSION: 1.02
 
 =cut
 
-our $VERSION = '1.01'; $VERSION = eval $VERSION;
+our $VERSION = '1.02'; $VERSION = eval $VERSION;
 
 #---------------------------------------------------------------------
 
@@ -499,9 +499,9 @@ sub traverse_tree {
         else              {            $item =  $member }
 
         for( $tags->{item}{begin} ) {
-            push @ret, $_->( $indent, $parents ) if defined }
-        if( $change  ) { $item = $change->( $item, $indent, $parents ) }
-        if( $display ) { push @ret, $display->( $item, $indent, $parents ) }
+            push @ret, $_->( $indent, $parents, $more ) if defined }
+        if( $change  ) { $item = $change->( $item, $indent, $parents, $more ) }
+        if( $display ) { push @ret, $display->( $item, $indent, $parents, $more ) }
         else           { push @ret, $item }
 
         push @ret, traverse_tree( 
@@ -515,7 +515,7 @@ sub traverse_tree {
             ) if $more;
 
         for( $tags->{item}{end} ) {
-            push @ret, $_->( $indent, $parents ) if defined }
+            push @ret, $_->( $indent, $parents, $more ) if defined }
     }
 
     for( $tags->{group}{end} ) {  # XXX autovivication -- do we care?

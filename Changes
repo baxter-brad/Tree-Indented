@@ -1,5 +1,8 @@
 Revision history for Perl extension Tree::Indented.
 
+1.02 Fri Apr  2 16:55:30 EDT 2010
+    - added $more parameter in traverse tree (need to change pod)
+
 1.01  Fri Feb 12 12:26:27 EST 2010
     - removed $Comment
     - removed support for comments (too painful to implement just now)

@@ -2,7 +2,7 @@
 Tree::Indented - a module to parse indented text into a simple tree structure
 
 !VERSION
-VERSION: 1.01
+VERSION: 1.02
 
 !EXPORTS
 Nothing is exported by default. The following may be exported individually; all three may be exported using the {{{:all}}} tag:
